@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>永續創新大冒險</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; overflow: hidden; }
+    .background { position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-size: cover; background-position: center; z-index: -2; }
+    body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); z-index: -1; }
+    .tabs { position: absolute; top: 10px; left: 10px; z-index: 10; }
+    .tab-button { padding: 10px; margin: 0 5px 10px 0; background: #ccc;
+      border: none; cursor: pointer; border-radius: 4px; }
+    .tab-button.active { background: #4caf50; color: #fff; }
+    .tab-content { display: none; padding: 20px; height: 100vh; overflow: auto; }
+    .tab-content.active { display: block; }
+    .material, .equipment, .plan { background: rgba(255,255,255,0.7);
+      padding: 10px; margin-bottom: 10px; cursor: grab; border-radius: 8px;
+      color: black; }
+    .drop-zone { height: 80px; border: 2px dashed #ccc; border-radius: 10px;
+      background: rgba(255,255,255,0.2); margin-bottom: 10px;
+      text-align: center; line-height: 80px; font-weight: bold; color: #fff; }
+    .drop-zone.correct { background-color: rgba(0,255,0,0.4); border-color: limegreen; }
+    #timer { font-size: 24px; color: red; font-weight: bold; }
+    #level4 { position: relative; overflow: hidden; padding: 0; }
+    .worker { position: absolute; bottom: 10px; width: 80px; height: auto; z-index: 10; }
+    .falling-material { position: absolute; width: 50px; height: auto; }
+    #score { font-size: 20px; font-weight: bold; color: yellow;
+      position: absolute; top: 10px; right: 20px; z-index: 11; }
+    #startLevel4Btn { font-size: 18px; margin-top: 20px; padding: 10px 20px; }
+
+    /* 第五關樣式 */
+    #progressContainer { width:100%; background:#444; height:20px;
+      border-radius:10px; overflow:hidden; margin-bottom:10px; }
+    #progressBar { height:100%; width:100%; background:limegreen;
+      transition: width 1s linear; }
+    #fifthScore { font-size:18px; margin-bottom:10px; color:yellow; }
+    #fifthMessage { color:red; font-weight:bold; margin-top:10px; }
+    .building-list img { cursor: grab; width:80px; margin:5px; }
+    #fifthDropZone { height:150px; border:2px dashed #ccc;
+      border-radius:10px; text-align:center; line-height:150px;
+      color:#fff; background:rgba(255,255,255,0.2); margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="background" id="bg"></div>
+  <div class="tabs">
+    <button class="tab-button" data-tab="level1">第一關</button>
+    <button class="tab-button" data-tab="level2">第二關</button>
+    <button class="tab-button" data-tab="level3">第三關</button>
+    <button class="tab-button" data-tab="level4">第四關</button>
+    <button class="tab-button" data-tab="level5">第五關</button>
+  </div>
+
+  <!-- 第一關 -->
+  <div class="tab-content" id="level1">
+    <h2>第一關：災後重建</h2>
+    <div class="material" draggable="true" data-type="recycled-concrete">♻️ 再生混凝土</div>
+    <div class="material" draggable="true" data-type="bamboo">🎋 竹製建材</div>
+    <div class="drop-zone" data-correct="recycled-concrete">道路</div>
+    <div class="drop-zone" data-correct="bamboo">橋梁</div>
+    <button onclick="validateLevel(1)">確認</button>
+    <p id="result1"></p>
+  </div>
+
+  <!-- 第二關 -->
+  <div class="tab-content" id="level2">
+    <h2>第二關：智慧工地</h2>
+    <div class="equipment" draggable="true" data-type="sensor">📡 感測器</div>
+    <div class="equipment" draggable="true" data-type="drone">🛸 無人機</div>
+    <div class="equipment" draggable="true" data-type="camera">📷 攝影機</div>
+    <div class="equipment" draggable="true" data-type="helmet">⛑️ 智慧安全帽</div>
+    <div class="plan" draggable="true" data-type="sensor">地基監測</div>
+    <div class="plan" draggable="true" data-type="drone">材料運送</div>
+    <div class="plan" draggable="true" data-type="camera">工地監控</div>
+    <div class="plan" draggable="true" data-type="helmet">人員定位</div>
+    <div class="drop-zone" data-correct="sensor">地基</div>
+    <div class="drop-zone" data-correct="drone">空運平台</div>
+    <div class="drop-zone" data-correct="camera">警衛室</div>
+    <div class="drop-zone" data-correct="helmet">工作區</div>
+    <button onclick="validateLevel(2)">確認</button>
+    <p id="result2"></p>
+  </div>
+
+  <!-- 第三關 -->
+  <div class="tab-content" id="level3">
+    <h2>第三關：限時規劃 <span id="timer">90</span> 秒</h2>
+    <p>請選出最適合的綠色建材並拖曳到正確的位置。小心，有些選項是錯的！</p>
+    <div class="material" draggable="true" data-type="solar">🔆 太陽能板</div>
+    <div class="material" draggable="true" data-type="green-wall">🌿 垂直綠化牆</div>
+    <div class="material" draggable="true" data-type="permeable">💧 透水地面</div>
+    <div class="material" draggable="true" data-type="glass">🪟 雙層玻璃</div>
+    <div class="material" draggable="true" data-type="led">💡 LED 照明</div>
+    <div class="material" draggable="true" data-type="insulation">🧱 保溫牆體</div>
+    <div class="material" draggable="true" data-type="plastic">🧴 塑膠地板（非綠材）</div>
+    <div class="material" draggable="true" data-type="metal-roof">⛏️ 金屬屋頂（高耗能）</div>
+    <div class="drop-zone" data-correct="solar">屋頂發電區</div>
+    <div class="drop-zone" data-correct="green-wall">西側外牆</div>
+    <div class="drop-zone" data-correct="permeable">雨水花園地面</div>
+    <div class="drop-zone" data-correct="glass">南向窗</div>
+    <div class="drop-zone" data-correct="led">室內燈具區</div>
+    <div class="drop-zone" data-correct="insulation">外牆中層</div>
+    <button onclick="validateLevel(3)">確認</button>
+    <p id="result3"></p>
+  </div>
+
+  <!-- 第四關 -->
+  <div class="tab-content" id="level4">
+    <h2>第四關：接住永續建材</h2>
+    <p>提示：請接住這些建材：</p>
+    <div id="materialHint">
+      <img src="material1.png" alt="material1" style="width:50px;" /> 
+      <img src="material2.png" alt="material2" style="width:50px;" /> 
+      <img src="material3.png" alt="material3" style="width:50px;" />
+    </div>
+    <button id="startLevel4Btn">開始挑戰</button>
+    <button id="endLevel4Btn" style="margin-left:10px;">結束挑戰</button>
+    <div id="score">分數：0</div>
+    <img src="worker.png" class="worker" id="worker" />
+  </div>
+
+  <!-- 第五關 -->
+  <div class="tab-content" id="level5">
+    <h2>第五關：打造永續城市藍圖</h2>
+    <div id="progressContainer"><div id="progressBar"></div></div>
+    <div id="fifthScore">目前分數：0 / 1000</div>
+    <div id="fifthMessage"></div>
+    <div class="building-list">
+      <img src="solar.png" draggable="true" class="building" data-type="correct" alt="太陽能" />
+      <img src="bike-lane.png" draggable="true" class="building" data-type="correct" alt="自行車道" />
+      <img src="school.png" draggable="true" class="building" data-type="correct" alt="學校" />
+      <img src="public-housing.png" draggable="true" class="building" data-type="correct" alt="社會住宅" />
+      <img src="green-park.png" draggable="true" class="building" data-type="correct" alt="綠地" />
+      <img src="factory-smoke.png" draggable="true" class="building" data-type="wrong" alt="工廠" />
+      <img src="luxury-villa.png" draggable="true" class="building" data-type="wrong" alt="豪宅" />
+      <img src="coal-plant.png" draggable="true" class="building" data-type="wrong" alt="燃煤電廠" />
+    </div>
+    <div id="fifthDropZone">拖曳永續建設到這裡</div>
+    <button id="startLevel5Btn">開始挑戰</button>
+    <button id="endLevel5Btn" style="display:none;">結束挑戰</button>
+  </div>
+
+  <script>
+    const levelPassed = { level1:false, level2:false, level3:false, level4:false, level5:false };
+
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const bg = document.getElementById('bg');
+    const backgrounds = { level1:'images1.png', level2:'images2.png', level3:'images3.png', level4:'images4.png', level5:'images5.png' };
+
+    tabButtons.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const lvl=btn.dataset.tab;
+        const num=parseInt(lvl.replace('level',''));
+        if(num>1&&!levelPassed['level'+(num-1)]){
+          alert('請先完成上一關！');
+          return;
+        }
+        tabButtons.forEach(b=>b.classList.remove('active'));
+        tabContents.forEach(c=>c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(lvl).classList.add('active');
+        bg.style.backgroundImage=`url('${backgrounds[lvl]}')`;
+        if(lvl==='level3') startTimer();
+        if(lvl==='level4') resetLevel4();
+      });
+    });
+    tabButtons[0].click();
+
+    function validateLevel(n){
+      let ok=true;
+      document.querySelectorAll(`#level${n} .drop-zone`).forEach(z=>{
+        if(z.dataset.selected!==z.dataset.correct) ok=false;
+      });
+      const res=document.getElementById('result'+n);
+      if(ok){ res.textContent='通過！'; levelPassed['level'+n]=true; }
+      else res.textContent='有錯誤，請再試一次。';
+    }
+
+    document.querySelectorAll('.material, .equipment, .plan').forEach(el=>{
+      el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.dataset.type));
+    });
+    document.querySelectorAll('.drop-zone').forEach(z=>{
+      z.addEventListener('dragover',e=>e.preventDefault());
+      z.addEventListener('drop',e=>{
+        e.preventDefault();
+        const dt=e.dataTransfer.getData('text/plain');
+        z.textContent=dt; z.dataset.selected=dt;
+      });
+    });
+
+    let countdownInterval;
+    function startTimer(){
+      let t=90;
+      const tm=document.getElementById('timer');
+      clearInterval(countdownInterval);
+      countdownInterval=setInterval(()=>{
+        t--; tm.textContent=t;
+        if(t<=0){ clearInterval(countdownInterval); alert('時間到！'); }
+      },1000);
+    }
+
+    // 第四關
+    const worker=document.getElementById('worker'), scoreEl4=document.getElementById('score');
+    let score4=0, interval4, moveX=window.innerWidth/2;
+    function resetLevel4(){
+      score4=0; scoreEl4.textContent='分數：0'; clearInterval(interval4);
+      worker.style.left=moveX+'px';
+    }
+    document.addEventListener('keydown',e=>{
+      if(e.key==='ArrowLeft') moveX-=20;
+      if(e.key==='ArrowRight') moveX+=20;
+      moveX=Math.max(0,Math.min(window.innerWidth-80,moveX));
+      worker.style.left=moveX+'px';
+    });
+    document.addEventListener('mousemove',e=>{
+      moveX=e.clientX-40;
+      moveX=Math.max(0,Math.min(window.innerWidth-80,moveX));
+      worker.style.left=moveX+'px';
+    });
+    document.getElementById('startLevel4Btn').addEventListener('click',()=>{
+      resetLevel4();
+      let t=75;
+      interval4=setInterval(()=>{
+        spawnMaterial();
+        t--;
+        if(t<=0||score4>=1200){
+          clearInterval(interval4);
+          if(score4>=1200){ levelPassed.level4=true; alert('🎉 成功過關！'); }
+          else alert('時間到！');
+        }
+      },500);
+    });
+    document.getElementById('endLevel4Btn').addEventListener('click',()=>{
+      clearInterval(interval4);
+      if(score4>=1200){ levelPassed.level4=true; alert('🎉 成功過關！'); }
+      else alert('尚未達標，再試一次！');
+    });
+    function spawnMaterial(){
+      const img=document.createElement('img');
+      const corrects=['material1.png','material2.png','material3.png'];
+      const wrongs=['material4.png','material5.png','material6.png'];
+      const ok=Math.random()<0.5;
+      img.src=ok?corrects[Math.floor(Math.random()*corrects.length)]
+                :wrongs[Math.floor(Math.random()*wrongs.length)];
+      img.className='falling-material';
+      img.style.left=Math.random()*(window.innerWidth-50)+'px';
+      img.dataset.correct=ok?'yes':'no';
+      document.body.appendChild(img);
+      const fall=setInterval(()=>{
+        img.style.top=parseInt(img.style.top||'-50')+5+'px';
+        const r=img.getBoundingClientRect(), w=worker.getBoundingClientRect();
+        if(r.bottom>=w.top&&r.left<w.right&&r.right>w.left){
+          if(img.dataset.correct==='yes') score4+=100;
+          else score4-=200;
+          scoreEl4.textContent='分數：'+score4;
+          clearInterval(fall); img.remove();
+        }
+        if(parseInt(img.style.top)>window.innerHeight){ clearInterval(fall); img.remove(); }
+      },30);
+    }
+
+    // 第五關
+    let fifthScore=0, wrongCount=0, fifthTimer=null, fifthTimeLeft=60;
+    const targetScore=1000;
+    const sb=document.getElementById('progressBar');
+    const score5El=document.getElementById('fifthScore');
+    const msgEl=document.getElementById('fifthMessage');
+    const drop5=document.getElementById('fifthDropZone');
+    document.querySelectorAll('#level5 .building').forEach(el=>{
+      el.addEventListener('dragstart',e=>e.dataTransfer.setData('type',el.dataset.type));
+    });
+    drop5.addEventListener('dragover',e=>e.preventDefault());
+    drop5.addEventListener('drop',e=>{
+      e.preventDefault();
+      const tp=e.dataTransfer.getData('type');
+      if(tp==='correct') fifthScore+=200;
+      else { wrongCount++; if(wrongCount>=3) msgEl.textContent='需留意永續原則！'; }
+      score5El.textContent=`目前分數：${fifthScore} / ${targetScore}`;
+      sb.style.width=`${Math.max(0,(targetScore - fifthScore)/targetScore*100)}%`;
+      if(fifthScore>=targetScore){
+        clearInterval(fifthTimer);
+        alert('🎉 第五關通過！');
+        levelPassed.level5=true;
+      }
+    });
+    document.getElementById('startLevel5Btn').addEventListener('click',()=>{
+      fifthScore=0; wrongCount=0; fifthTimeLeft=60;
+      sb.style.width='100%'; score5El.textContent=`目前分數：0 / ${targetScore}`;
+      msgEl.textContent='';
+      document.getElementById('startLevel5Btn').style.display='none';
+      document.getElementById('endLevel5Btn').style.display='inline';
+      fifthTimer=setInterval(()=>{
+        fifthTimeLeft--;
+        sb.style.width=`${fifthTimeLeft*100/60}%`;
+        if(fifthTimeLeft<=0){
+          clearInterval(fifthTimer);
+          alert('時間到，第五關挑戰結束！');
+        }
+      },1000);
+    });
+    document.getElementById('endLevel5Btn').addEventListener('click',()=>{
+      clearInterval(fifthTimer);
+      if(fifthScore>=targetScore){
+        alert('🎉 成功完成第五關！');
+        levelPassed.level5=true;
+      } else alert('尚未達標，再試一次！');
+    });
+  </script>
+</body>
+</html>
